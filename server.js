@@ -18,7 +18,10 @@ const db = new sqlite3.Database('./tasks.db', (err) => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
+      password TEXT NOT NULL,
+      nickname TEXT,
+      avatar TEXT,
+      background TEXT
     );`);
     db.run(`CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,6 +62,34 @@ app.post('/login', (req, res) => {
     } else {
       res.status(401).json({ message: 'Invalid credentials' });
     }
+  });
+});
+
+// Отримання профілю користувача
+app.get('/api/profile/:username', (req, res) => {
+  const { username } = req.params;
+  const sql = 'SELECT username, nickname, avatar, background FROM users WHERE username = ?';
+  db.get(sql, [username], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (row) {
+      res.json(row);
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  });
+});
+
+// Оновлення профілю користувача
+app.put('/api/profile', (req, res) => {
+  const { username, nickname, avatar, background } = req.body;
+  const sql = 'UPDATE users SET nickname = ?, avatar = ?, background = ? WHERE username = ?';
+  db.run(sql, [nickname, avatar, background, username], function(err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json({ message: 'Profile updated successfully' });
   });
 });
 
