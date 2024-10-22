@@ -11,13 +11,14 @@ const Login = ({ setUser }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:3000/login', { username, password });
+      const response = await axios.post('http://localhost:3001/login', { username, password });
 
       if (response.status === 200) {
-        const userData = { username };
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        window.location.href = '/todos';
+        const { token } = response.data; // Отримуємо токен
+        setUser({ username });
+        localStorage.setItem('user', JSON.stringify({ username }));
+        localStorage.setItem('token', token); // Зберігаємо токен
+        window.location.href = '/todos'; // Перенаправлення на список справ
       }
     } catch (err) {
       setError('Login failed. Please try again.');

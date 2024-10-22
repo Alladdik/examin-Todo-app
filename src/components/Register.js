@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
 import axios from 'axios';
-import './Auth.css'; // Імпортуємо CSS
+import './Auth.css';
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -12,14 +12,16 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:3000/register', { username, password });
-      console.log('Registration successful:', response.data);
+      const response = await axios.post('http://localhost:3001/register', { username, password });
+      console.log('Registration successful:', response.data);  // Якщо хочеш залишити для логування
       setSuccess('Registration successful! Please log in.');
+      setError('');
     } catch (err) {
       setError('Registration failed. Please try again.');
       console.error(err);
     }
   };
+  
 
   return (
     <div className="auth-container">
@@ -48,9 +50,7 @@ const Register = () => {
         </Form.Group>
         {error && <p className="text-danger">{error}</p>}
         {success && <p className="text-success">{success}</p>}
-        <Button variant="primary" type="submit">
-          Register
-        </Button>
+        <Button variant="primary" type="submit">Register</Button>
       </Form>
     </div>
   );
