@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './Profile.css';
+import { Button } from 'react-bootstrap';
 import axios from 'axios';
+import Compressor from 'compressorjs';
 
 const Profile = ({ username }) => {
   const [nickname, setNickname] = useState(username);
@@ -9,16 +11,32 @@ const Profile = ({ username }) => {
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => setAvatar(reader.result);
-    reader.readAsDataURL(file);
+    new Compressor(file, {
+      quality: 0.6, // Якість стиснення від 0 до 1
+      success(result) {
+        const reader = new FileReader();
+        reader.onloadend = () => setAvatar(reader.result);
+        reader.readAsDataURL(result);
+      },
+      error(err) {
+        console.log(err.message);
+      },
+    });
   };
 
   const handleBackgroundChange = (e) => {
     const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => setBackground(reader.result);
-    reader.readAsDataURL(file);
+    new Compressor(file, {
+      quality: 0.6,
+      success(result) {
+        const reader = new FileReader();
+        reader.onloadend = () => setBackground(reader.result);
+        reader.readAsDataURL(result);
+      },
+      error(err) {
+        console.log(err.message);
+      },
+    });
   };
 
   const saveChanges = async () => {

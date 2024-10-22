@@ -7,7 +7,8 @@ const app = express();
 const PORT = 3001;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' })); // Збільшуємо ліміт до 10MB для JSON
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 // Підключення до бази даних
 const db = new sqlite3.Database('./tasks.db', (err) => {
