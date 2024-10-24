@@ -36,3 +36,12 @@
     transform: rotate(360deg);
   }
 }
+.todo-container {
+  text-align: center;
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+.w-75 {
+  width: 75% !important;
+}
