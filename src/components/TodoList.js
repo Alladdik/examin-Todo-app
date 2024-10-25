@@ -1,214 +1,369 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Archive, Trash2, LogOut } from 'lucide-react';
-import axios from 'axios';
+import { Form, Button, ListGroup, Badge, Card, Modal } from 'react-bootstrap';
 
-// Компонент сповіщення
-const Alert = ({ children, type = 'error', className = '' }) => {
-  const types = {
-    error: 'bg-red-100 text-red-700',
-    success: 'bg-green-100 text-green-700',
-  };
-  
-  return (
-    <div className={`p-4 mb-4 text-sm rounded-lg ${types[type]} ${className}`}>
-      {children}
-    </div>
-  );
-};
-
-// Головний компонент списку справ
-const TodoList = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+const TodoList = ({ isAuthenticated }) => {
   const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterPriority, setFilterPriority] = useState('all');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Конфігурація axios з токеном
-  const api = axios.create({
-    baseURL: 'http://localhost:3001',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    }
-  });
+  const [archivedTasks, setArchivedTasks] = useState([]);
+  const [newTask, setNewTask] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState("Medium");
+  const [newTaskCategory, setNewTaskCategory] = useState("Робота");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [filterCategory, setFilterCategory] = useState("Всі");
+  const [filterPriority, setFilterPriority] = useState("Всі");
+  const [filterStatus, setFilterStatus] = useState("active");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [showArchive, setShowArchive] = useState(false);
 
   useEffect(() => {
-    if (token) {
-      setIsAuthenticated(true);
-      fetchTasks();
-    }
-  }, [token, filterCategory, filterPriority]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setIsAuthenticated(false);
-    setTasks([]);
-  };
-
-  const fetchTasks = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await api.get('/api/tasks', {
-        params: {
-          category: filterCategory === 'all' ? '' : filterCategory,
-          priority: filterPriority === 'all' ? '' : filterPriority
-        }
-      });
-      setTasks(response.data);
-    } catch (error) {
-      if (error.response?.status === 401) {
-        handleLogout();
-      } else {
-        setError('Помилка завантаження завдань');
+    const fetchTasks = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const [tasksResponse, archivedResponse] = await Promise.all([
+          fetch("http://localhost:3001/api/tasks", {
+            headers: { "Authorization": `Bearer ${token}` }
+          }),
+          fetch("http://localhost:3001/api/tasks/archived", {
+            headers: { "Authorization": `Bearer ${token}` }
+          })
+        ]);
+        
+        if (!tasksResponse.ok || !archivedResponse.ok) 
+          throw new Error("Error fetching tasks");
+        
+        const [activeTasks, archivedTasks] = await Promise.all([
+          tasksResponse.json(),
+          archivedResponse.json()
+        ]);
+        
+        setTasks(activeTasks);
+        setArchivedTasks(archivedTasks);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
       }
-    } finally {
-      setIsLoading(false);
+    };
+
+    if (isAuthenticated) fetchTasks();
+  }, [isAuthenticated]);
+
+  const addTask = async () => {
+    if (!newTask.trim()) {
+      alert("Будь ласка, введіть текст завдання.");
+      return;
     }
-  };
 
-  const addTask = async (e) => {
-    e.preventDefault();
-    if (!newTask.trim()) return;
+    if (!newTaskDueDate) {
+      alert("Будь ласка, встановіть термін виконання.");
+      return;
+    }
 
-    setIsLoading(true);
-    setError(null);
+    const token = localStorage.getItem("token");
+    const newTaskObj = {
+      text: newTask,
+      category: newTaskCategory,
+      priority: newTaskPriority,
+      dueDate: newTaskDueDate,
+      completed: false,
+      createdAt: new Date().toISOString(),
+    };
 
     try {
-      const response = await api.post('/api/tasks', {
-        text: newTask,
-        category: filterCategory === 'all' ? 'work' : filterCategory,
-        priority: filterPriority === 'all' ? 'medium' : filterPriority
+      const response = await fetch("http://localhost:3001/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(newTaskObj),
       });
-
-      setTasks(prev => [...prev, response.data]);
-      setNewTask('');
+      if (!response.ok) throw new Error("Error adding task");
+      const createdTask = await response.json();
+      setTasks([...tasks, { ...newTaskObj, id: createdTask.id }]);
+      setNewTask("");
+      setNewTaskDueDate("");
     } catch (error) {
-      setError('Помилка додавання завдання');
-    } finally {
-      setIsLoading(false);
+      console.error("Error adding task:", error);
     }
   };
 
-  const toggleTaskComplete = async (taskId) => {
+  const archiveTask = async (taskId) => {
+    const token = localStorage.getItem("token");
     try {
-      const task = tasks.find(t => t.id === taskId);
-      await api.patch(`/api/tasks/${taskId}`, {
-        completed: !task.completed
+      const response = await fetch(`http://localhost:3001/api/tasks/${taskId}/archive`, {
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${token}` },
       });
+      if (!response.ok) throw new Error("Error archiving task");
       
-      setTasks(prev => prev.map(t => 
-        t.id === taskId ? { ...t, completed: !t.completed } : t
-      ));
+      const archivedTask = tasks.find(task => task.id === taskId);
+      setTasks(tasks.filter(task => task.id !== taskId));
+      setArchivedTasks([...archivedTasks, archivedTask]);
     } catch (error) {
-      setError('Помилка оновлення завдання');
+      console.error("Error archiving task:", error);
     }
   };
 
-  const deleteTask = async (taskId) => {
+  const restoreTask = async (taskId) => {
+    const token = localStorage.getItem("token");
     try {
-      await api.delete(`/api/tasks/${taskId}`);
-      setTasks(prev => prev.filter(t => t.id !== taskId));
+      const response = await fetch(`http://localhost:3001/api/tasks/${taskId}/restore`, {
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Error restoring task");
+      
+      const restoredTask = archivedTasks.find(task => task.id === taskId);
+      setArchivedTasks(archivedTasks.filter(task => task.id !== taskId));
+      setTasks([...tasks, restoredTask]);
     } catch (error) {
-      setError('Помилка видалення завдання');
+      console.error("Error restoring task:", error);
     }
   };
 
-  if (!isAuthenticated) {
-    return <div>Зачекайте...</div>;
-  }
+  const getDueDateStatus = (dueDate) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return { text: "Прострочено", variant: "danger" };
+    if (diffDays === 0) return { text: "Сьогодні", variant: "warning" };
+    if (diffDays <= 3) return { text: "Скоро", variant: "warning" };
+    return { text: `${diffDays} днів`, variant: "success" };
+  };
+
+  const filteredTasks = (filterStatus === "active" ? tasks : archivedTasks)
+    .filter(task =>
+      (filterCategory === "Всі" || task.category === filterCategory) &&
+      (filterPriority === "Всі" || task.priority === filterPriority)
+    )
+    .sort((a, b) => {
+      const order = sortOrder === "asc" ? 1 : -1;
+      if (sortBy === "createdAt") return order * (new Date(a.createdAt) - new Date(b.createdAt));
+      if (sortBy === "dueDate") return order * (new Date(a.dueDate) - new Date(b.dueDate));
+      if (sortBy === "priority") {
+        const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+        return order * (priorityOrder[a.priority] - priorityOrder[b.priority]);
+      }
+      return 0;
+    });
+
+  const TasksView = ({ tasks, isArchived }) => (
+    <ListGroup>
+      {tasks.length > 0 ? tasks.map(task => (
+        <ListGroup.Item 
+          key={task.id} 
+          className="d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <span className="me-2">{task.text}</span>
+            <Badge 
+              bg={task.priority === 'High' ? 'danger' : task.priority === 'Medium' ? 'warning' : 'info'}
+              className="me-2"
+            >
+              {task.priority === 'High' ? 'Високий' : task.priority === 'Medium' ? 'Середній' : 'Низький'}
+            </Badge>
+            <Badge bg="secondary" className="me-2">{task.category}</Badge>
+            {task.dueDate && (
+              <Badge 
+                bg={getDueDateStatus(task.dueDate).variant}
+                className="me-2"
+              >
+                {getDueDateStatus(task.dueDate).text}
+              </Badge>
+            )}
+            <small className="text-muted">
+              Створено: {new Date(task.createdAt).toLocaleDateString()}
+            </small>
+          </div>
+          <Button 
+            variant={isArchived ? "outline-success" : "outline-danger"} 
+            size="sm" 
+            onClick={() => isArchived ? restoreTask(task.id) : archiveTask(task.id)}
+          >
+            {isArchived ? "Відновити" : "Архівувати"}
+          </Button>
+        </ListGroup.Item>
+      )) : (
+        <ListGroup.Item className="text-center">Завдань немає</ListGroup.Item>
+      )}
+    </ListGroup>
+  );
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Список справ</h2>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Вийти
-          </button>
-        </div>
-        
-        {error && <Alert>{error}</Alert>}
-        
-        <form onSubmit={addTask} className="mb-6">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Додати нову справу..."
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              <Plus className="h-5 w-5" />
-              {isLoading ? 'Додавання...' : 'Додати'}
-            </button>
-          </div>
-        </form>
-
-        {isLoading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Завантаження...</p>
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Немає завдань для відображення</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => toggleTaskComplete(task.id)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+    <div className="container py-4">
+      <h2 className="mb-4 text-center">Список справ</h2>
+      {isAuthenticated ? (
+        <>
+          <Card className="mb-4">
+            <Card.Body>
+              <Form onSubmit={(e) => { e.preventDefault(); addTask(); }}>
+                <div className="d-flex gap-2 mb-3 flex-wrap">
+                  <Form.Control
+                    type="text"
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    placeholder="Додати нову справу"
+                    className="flex-grow-1"
+                    required
                   />
-                  <span className={task.completed ? 'line-through text-gray-500' : ''}>
-                    {task.text}
-                  </span>
+                  <Form.Control
+                    type="date"
+                    value={newTaskDueDate}
+                    onChange={(e) => setNewTaskDueDate(e.target.value)}
+                    className="w-auto"
+                    required
+                  />
+                  <Form.Select 
+                    value={newTaskPriority}
+                    onChange={(e) => setNewTaskPriority(e.target.value)}
+                    className="w-auto"
+                  >
+                    <option value="High">Високий</option>
+                    <option value="Medium">Середній</option>
+                    <option value="Low">Низький</option>
+                  </Form.Select>
+                  <Form.Select
+                    value={newTaskCategory}
+                    onChange={(e) => setNewTaskCategory(e.target.value)}
+                    className="w-auto"
+                  >
+                    <option value="Робота">Робота</option>
+                    <option value="Особисті">Особисті</option>
+                  </Form.Select>
+                  <Button variant="primary" type="submit">Додати</Button>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => toggleTaskComplete(task.id)}
-                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-                    title={task.completed ? 'Відновити' : 'Завершити'}
-                  >
-                    <Archive className="h-4 w-4 text-gray-500" />
-                  </button>
-                  <button
-                    onClick={() => deleteTask(task.id)}
-                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-                    title="Видалити"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </button>
+              </Form>
+            </Card.Body>
+          </Card>
+
+          <Card className="mb-4">
+            <Card.Body>
+              <div className="d-flex flex-wrap gap-2 justify-content-center">
+                <div className="bg-light p-2 rounded">
+                  <span className="me-2">Статус:</span>
+                  <div className="btn-group">
+                    <Button 
+                      variant={filterStatus === "active" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterStatus("active")}
+                    >
+                      Активні
+                    </Button>
+                    <Button 
+                      variant={filterStatus === "archived" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterStatus("archived")}
+                    >
+                      Архів
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-light p-2 rounded">
+                  <span className="me-2">Категорія:</span>
+                  <div className="btn-group">
+                    <Button 
+                      variant={filterCategory === "Всі" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterCategory("Всі")}
+                    >
+                      Всі
+                    </Button>
+                    <Button 
+                      variant={filterCategory === "Робота" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterCategory("Робота")}
+                    >
+                      Робота
+                    </Button>
+                    <Button 
+                      variant={filterCategory === "Особисті" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterCategory("Особисті")}
+                    >
+                      Особисті
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-light p-2 rounded">
+                  <span className="me-2">Пріоритет:</span>
+                  <div className="btn-group">
+                    <Button 
+                      variant={filterPriority === "Всі" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterPriority("Всі")}
+                    >
+                      Всі
+                    </Button>
+                    <Button 
+                      variant={filterPriority === "High" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterPriority("High")}
+                    >
+                      Високий
+                    </Button>
+                    <Button 
+                      variant={filterPriority === "Medium" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterPriority("Medium")}
+                    >
+                      Середній
+                    </Button>
+                    <Button 
+                      variant={filterPriority === "Low" ? "primary" : "outline-primary"}
+                      onClick={() => setFilterPriority("Low")}
+                    >
+                      Низький
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-light p-2 rounded">
+                  <span className="me-2">Сортувати за:</span>
+                  <div className="btn-group">
+                    <Button 
+                      variant={sortBy === "createdAt" ? "primary" : "outline-primary"}
+                      onClick={() => setSortBy("createdAt")}
+                    >
+                      Датою створення
+                    </Button>
+                    <Button 
+                      variant={sortBy === "dueDate" ? "primary" : "outline-primary"}
+                      onClick={() => setSortBy("dueDate")}
+                    >
+                      Терміном
+                    </Button>
+                    <Button 
+                      variant={sortBy === "priority" ? "primary" : "outline-primary"}
+                      onClick={() => setSortBy("priority")}
+                    >
+                      Пріоритетом
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-light p-2 rounded">
+                  <span className="me-2">Порядок:</span>
+                  <div className="btn-group">
+                    <Button 
+                      variant={sortOrder === "asc" ? "primary" : "outline-primary"}
+                      onClick={() => setSortOrder("asc")}
+                    >
+                      ↑
+                    </Button>
+                    <Button 
+                      variant={sortOrder === "desc" ? "primary" : "outline-primary"}
+                      onClick={() => setSortOrder("desc")}
+                    >
+                      ↓
+                    </Button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </Card.Body>
+          </Card>
+
+          <TasksView 
+            tasks={filteredTasks} 
+            isArchived={filterStatus === "archived"} 
+          />
+        </>
+      ) : (
+        <p className="text-center">Будь ласка, увійдіть, щоб побачити ваші справи.</p>
+      )}
     </div>
   );
 };
