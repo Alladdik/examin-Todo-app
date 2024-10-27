@@ -119,6 +119,49 @@ app.post('/api/tasks', (req, res) => {
     });
   });
 });
+// Видалення завдання
+app.delete('/api/tasks/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = 'DELETE FROM tasks WHERE id = ?';
+  
+  db.run(sql, [id], function(err) {
+    if (err) {
+      console.error('Error deleting task:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    res.json({ message: 'Task deleted successfully' });
+  });
+});
+
+// Оновіть функцію deleteTask в клієнтському коді (TodoList.jsx)
+const deleteTask = async (taskId) => {
+  const token = localStorage.getItem("token");
+  try {
+    const response = await fetch(`http://localhost:3001/api/tasks/${taskId}`, {
+      method: "DELETE",
+      headers: { 
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error("Error deleting task");
+    }
+    
+    // Оновлюємо обидва списки - активні та архівовані завдання
+    setTasks(tasks.filter(task => task.id !== taskId));
+    setArchivedTasks(archivedTasks.filter(task => task.id !== taskId));
+    setShowDeleteConfirm(false);
+    setTaskToDelete(null); // Очищаємо ID завдання для видалення
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    alert("Помилка при видаленні завдання. Спробуйте ще раз.");
+  }
+};
 
 // Архівування завдання
 app.put('/api/tasks/:id/archive', (req, res) => {
@@ -136,7 +179,37 @@ app.put('/api/tasks/:id/archive', (req, res) => {
     res.json({ message: 'Task archived successfully' });
   });
 });
+app.put('/api/tasks/:id/complete', (req, res) => {
+  const { id } = req.params;
+  const sql = 'UPDATE tasks SET completed = 1 WHERE id = ?';
+  
+  db.run(sql, [id], function(err) {
+    if (err) {
+      console.error('Error completing task:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    res.json({ message: 'Task completed successfully' });
+  });
+});
 
+app.put('/api/tasks/:id/uncomplete', (req, res) => {
+  const { id } = req.params;
+  const sql = 'UPDATE tasks SET completed = 0 WHERE id = ?';
+  
+  db.run(sql, [id], function(err) {
+    if (err) {
+      console.error('Error uncompleting task:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    res.json({ message: 'Task uncompleted successfully' });
+  });
+});
 // Відновлення завдання з архіву
 app.put('/api/tasks/:id/restore', (req, res) => {
   const { id } = req.params;

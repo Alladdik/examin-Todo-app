@@ -13,7 +13,9 @@ const TodoList = ({ isAuthenticated }) => {
   const [filterStatus, setFilterStatus] = useState("active");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("asc");
-  const [showArchive, setShowArchive] = useState(false);
+  // const [showArchive, setShowArchive] = useState(false); // Потрібно для уникнення попередження
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -86,6 +88,49 @@ const TodoList = ({ isAuthenticated }) => {
     }
   };
 
+  const deleteTask = async (taskId) => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`http://localhost:3001/api/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Error deleting task");
+      
+      setTasks(tasks.filter(task => task.id !== taskId));
+      setArchivedTasks(archivedTasks.filter(task => task.id !== taskId));
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  };
+
+  const completeTask = async (taskId) => {
+    const token = localStorage.getItem("token");
+    const taskToUpdate = tasks.find(task => task.id === taskId);
+    
+    if (!taskToUpdate) return;
+    
+    try {
+      const response = await fetch(`http://localhost:3001/api/tasks/${taskId}/complete`, {
+        method: "PUT",
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ completed: !taskToUpdate.completed })
+      });
+      
+      if (!response.ok) throw new Error("Error completing task");
+      
+      setTasks(tasks.map(task => 
+        task.id === taskId ? { ...task, completed: !task.completed } : task
+      ));
+    } catch (error) {
+      console.error("Error completing task:", error);
+    }
+  };
+
   const archiveTask = async (taskId) => {
     const token = localStorage.getItem("token");
     try {
@@ -96,8 +141,10 @@ const TodoList = ({ isAuthenticated }) => {
       if (!response.ok) throw new Error("Error archiving task");
       
       const archivedTask = tasks.find(task => task.id === taskId);
-      setTasks(tasks.filter(task => task.id !== taskId));
-      setArchivedTasks([...archivedTasks, archivedTask]);
+      if (archivedTask) {
+        setTasks(tasks.filter(task => task.id !== taskId));
+        setArchivedTasks([...archivedTasks, archivedTask]);
+      }
     } catch (error) {
       console.error("Error archiving task:", error);
     }
@@ -113,8 +160,10 @@ const TodoList = ({ isAuthenticated }) => {
       if (!response.ok) throw new Error("Error restoring task");
       
       const restoredTask = archivedTasks.find(task => task.id === taskId);
-      setArchivedTasks(archivedTasks.filter(task => task.id !== taskId));
-      setTasks([...tasks, restoredTask]);
+      if (restoredTask) {
+        setArchivedTasks(archivedTasks.filter(task => task.id !== taskId));
+        setTasks([...tasks, { ...restoredTask, archived: false }]);
+      }
     } catch (error) {
       console.error("Error restoring task:", error);
     }
@@ -148,46 +197,69 @@ const TodoList = ({ isAuthenticated }) => {
     });
 
   const TasksView = ({ tasks, isArchived }) => (
-    <ListGroup>
-      {tasks.length > 0 ? tasks.map(task => (
-        <ListGroup.Item 
-          key={task.id} 
-          className="d-flex justify-content-between align-items-center"
-        >
-          <div>
-            <span className="me-2">{task.text}</span>
+  <ListGroup>
+    {tasks.length > 0 ? tasks.map(task => (
+      <ListGroup.Item 
+        key={task.id} 
+        className={`d-flex justify-content-between align-items-center ${task.completed ? 'bg-light' : ''}`}
+      >
+        <div>
+          <span className={`me-2 ${task.completed ? 'text-decoration-line-through' : ''}`}>
+            {task.text}
+          </span>
+          <Badge 
+            bg={task.priority === 'High' ? 'danger' : task.priority === 'Medium' ? 'warning' : 'info'}
+            className="me-2"
+          >
+            {task.priority === 'High' ? 'Високий' : task.priority === 'Medium' ? 'Середній' : 'Низький'}
+          </Badge>
+          <Badge bg="secondary" className="me-2">{task.category}</Badge>
+          {task.dueDate && (
             <Badge 
-              bg={task.priority === 'High' ? 'danger' : task.priority === 'Medium' ? 'warning' : 'info'}
+              bg={getDueDateStatus(task.dueDate).variant}
               className="me-2"
             >
-              {task.priority === 'High' ? 'Високий' : task.priority === 'Medium' ? 'Середній' : 'Низький'}
+              {getDueDateStatus(task.dueDate).text}
             </Badge>
-            <Badge bg="secondary" className="me-2">{task.category}</Badge>
-            {task.dueDate && (
-              <Badge 
-                bg={getDueDateStatus(task.dueDate).variant}
-                className="me-2"
-              >
-                {getDueDateStatus(task.dueDate).text}
-              </Badge>
-            )}
-            <small className="text-muted">
-              Створено: {new Date(task.createdAt).toLocaleDateString()}
-            </small>
-          </div>
+          )}
+          <small className="text-muted">
+            Створено: {new Date(task.createdAt).toLocaleDateString()}
+          </small>
+        </div>
+        <div className="d-flex gap-2">
+          {!isArchived && (
+            <Button 
+              variant={task.completed ? "outline-warning" : "outline-success"}
+              size="sm"
+              onClick={() => completeTask(task.id)}
+            >
+              {task.completed ? "Відмінити" : "Завершити"}
+            </Button>
+          )}
           <Button 
-            variant={isArchived ? "outline-success" : "outline-danger"} 
+            variant={isArchived ? "outline-success" : "outline-warning"} 
             size="sm" 
             onClick={() => isArchived ? restoreTask(task.id) : archiveTask(task.id)}
           >
             {isArchived ? "Відновити" : "Архівувати"}
           </Button>
-        </ListGroup.Item>
-      )) : (
-        <ListGroup.Item className="text-center">Завдань немає</ListGroup.Item>
-      )}
-    </ListGroup>
-  );
+          <Button 
+            variant="outline-danger" 
+            size="sm" 
+            onClick={() => {
+              setTaskToDelete(task.id);
+              setShowDeleteConfirm(true);
+            }}
+          >
+            Видалити
+          </Button>
+        </div>
+      </ListGroup.Item>
+    )) : (
+      <ListGroup.Item className="text-center">Завдань немає</ListGroup.Item>
+    )}
+  </ListGroup>
+);
 
   return (
     <div className="container py-4">
@@ -342,13 +414,13 @@ const TodoList = ({ isAuthenticated }) => {
                       variant={sortOrder === "asc" ? "primary" : "outline-primary"}
                       onClick={() => setSortOrder("asc")}
                     >
-                      ↑
+                      За зростанням ↑
                     </Button>
                     <Button 
                       variant={sortOrder === "desc" ? "primary" : "outline-primary"}
                       onClick={() => setSortOrder("desc")}
                     >
-                      ↓
+                      За спаданням ↓
                     </Button>
                   </div>
                 </div>
@@ -360,6 +432,24 @@ const TodoList = ({ isAuthenticated }) => {
             tasks={filteredTasks} 
             isArchived={filterStatus === "archived"} 
           />
+
+          {/* Модальне вікно підтвердження видалення */}
+          <Modal show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Підтвердження видалення</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              Ви впевнені, що хочете видалити це завдання? Ця дія незворотна.
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>
+                Скасувати
+              </Button>
+              <Button variant="danger" onClick={() => deleteTask(taskToDelete)}>
+                Видалити
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </>
       ) : (
         <p className="text-center">Будь ласка, увійдіть, щоб побачити ваші справи.</p>
