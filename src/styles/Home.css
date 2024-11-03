@@ -1,4 +1,4 @@
-.auth-container {
+.home-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -16,75 +16,58 @@
   height: 100%;
 }
 
-.auth-content {
+.content {
   background-color: rgba(255, 255, 255, 0.9);
   padding: 2rem;
   border-radius: 15px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
+  max-width: 600px;
   width: 90%;
   z-index: 2;
   transition: all 0.3s ease;
 }
 
-.auth-content:hover {
+.content:hover {
   transform: translateY(-5px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
 .title {
-  font-size: 2.4rem;
+  font-size: 2.8rem;
   color: #333;
   margin-bottom: 1.5rem;
   font-weight: 700;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 0.8rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  transition: border-color 0.3s ease;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #4a90e2;
-}
-
-.error-message {
-  color: #e74c3c;
-  margin-bottom: 1rem;
+.description {
+  font-size: 1.2rem;
+  color: #555;
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
 }
 
 .buttons {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  justify-content: center;
+  gap: 1.5rem;
 }
 
 .btn {
   padding: 0.8rem 1.5rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
   text-decoration: none;
   border-radius: 25px;
   transition: all 0.3s ease;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border: none;
-  cursor: pointer;
 }
 
 .btn-primary {
   background-color: #4a90e2;
   color: white;
+  border: 2px solid #4a90e2;
 }
 
 .btn-secondary {
@@ -100,6 +83,7 @@
 
 .btn-primary:hover {
   background-color: #3a7bd5;
+  border-color: #3a7bd5;
 }
 
 .btn-secondary:hover {
@@ -153,18 +137,18 @@
     background-position: 0% 50%;
   }
 }
-
 @media (max-width: 768px) {
-  .auth-content {
-    padding: 1.5rem;
+  .title {
+    font-size: 2.2rem;
   }
 
-  .title {
-    font-size: 2rem;
+  .description {
+    font-size: 1rem;
   }
 
   .buttons {
     flex-direction: column;
+    gap: 1rem;
   }
 
   .btn {
@@ -183,10 +167,10 @@
   }
 }
 
-.auth-content > * {
+.content > * {
   animation: fadeIn 0.5s ease-out forwards;
 }
 
-.auth-content > *:nth-child(1) { animation-delay: 0.1s; }
-.auth-content > *:nth-child(2) { animation-delay: 0.3s; }
-.auth-content > *:nth-child(3) { animation-delay: 0.5s; }
+.content > *:nth-child(1) { animation-delay: 0.1s; }
+.content > *:nth-child(2) { animation-delay: 0.3s; }
+.content > *:nth-child(3) { animation-delay: 0.5s; }

@@ -1,14 +1,81 @@
-import React, { useState } from 'react';
-import { Button, Form } from 'react-bootstrap';
+import React, { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
-import './Auth.css';
+import '../styles/Auth.css';
 
 const Register = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [username, setUsername] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [success, setSuccess] = React.useState('');
+  const canvasRef = useRef(null);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const particles = [];
+
+    const createParticle = (x, y) => {
+      const hue = Math.random() * 360;
+      particles.push({
+        x,
+        y,
+        hue,
+        radius: Math.random() * 15 + 5,
+        speedX: Math.random() * 3 - 1.5,
+        speedY: Math.random() * 3 - 1.5,
+        life: 100,
+      });
+    };
+
+    const updateParticles = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+
+        p.x += p.speedX;
+        p.y += p.speedY;
+        p.life--;
+
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          i--;
+          continue;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 50%, ${p.life / 100})`;
+        ctx.fill();
+      }
+
+      animationFrameId = requestAnimationFrame(updateParticles);
+    };
+
+    const handleMouseMove = (e) => {
+      createParticle(e.clientX, e.clientY);
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+    updateParticles();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -22,20 +89,46 @@ const Register = () => {
 
   return (
     <div className="auth-container">
-      <h2>Register</h2>
-      <Form onSubmit={handleSubmit}>
-        <Form.Group controlId="formBasicUsername">
-          <Form.Label>Username</Form.Label>
-          <Form.Control type="text" placeholder="Enter username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </Form.Group>
-        <Form.Group controlId="formBasicPassword">
-          <Form.Label>Password</Form.Label>
-          <Form.Control type="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </Form.Group>
-        {error && <p className="text-danger">{error}</p>}
-        {success && <p className="text-success">{success}</p>}
-        <Button variant="primary" type="submit">Register</Button>
-      </Form>
+      <canvas ref={canvasRef} className="particle-canvas"></canvas>
+      <div className="content">
+        <h1 className="title">Register for Todo App</h1>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <input
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && <p className="error-message">{error}</p>}
+          {success && <p className="success-message">{success}</p>}
+          <div className="buttons">
+            <button type="submit" className="btn btn-primary">Register</button>
+            <Link to="/login" className="btn btn-secondary">Login</Link>
+          </div>
+        </form>
+      </div>
+      <footer className="developer-info">
+        <div className="developer-info-content">
+          <p>
+            by alladdiks |{' '}
+            <a href="https://github.com/Alladdik" target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

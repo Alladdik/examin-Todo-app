@@ -5,6 +5,7 @@ import TodoList from './components/TodoList';
 import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
+import Home from './components/Home'; // Додайте цей імпорт
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -26,7 +27,8 @@ const App = () => {
     <Router>
       <Navbar user={user} onLogout={handleLogout} />
       <Routes>
-        <Route path="/" element={<Login setUser={setUser} />} />
+        <Route path="/" element={<Home />} /> {/* Додайте цей маршрут */}
+        <Route path="/login" element={<Login setUser={setUser} />} /> {/* Змініть цей маршрут */}
         <Route path="/register" element={<Register />} />
         <Route path="/todos" element={<TodoList isAuthenticated={!!user} />} />
         {user && <Route path="/profile" element={<Profile username={user.username} />} />}

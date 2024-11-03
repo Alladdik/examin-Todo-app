@@ -1,12 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import './Auth.css';
+import '../styles/Home.css';
 
-const Login = ({ setUser }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+const Home = () => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -75,52 +71,20 @@ const Login = ({ setUser }) => {
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post('http://localhost:3001/login', { username, password });
-      const { token } = response.data;
-
-      setUser({ username });
-      localStorage.setItem('user', JSON.stringify({ username }));
-      localStorage.setItem('token', token);
-
-      window.location.href = '/todos';
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    }
-  };
 
   return (
-    <div className="auth-container">
+    <div className="home-container">
       <canvas ref={canvasRef} className="particle-canvas"></canvas>
-      <div className="auth-content">
-        <h1 className="title">Login to Todo App</h1>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          {error && <p className="error-message">{error}</p>}
-          <div className="buttons">
-            <button type="submit" className="btn btn-primary">Login</button>
-            <Link to="/register" className="btn btn-secondary">Register</Link>
-          </div>
-        </form>
+      <div className="content">
+        <h1 className="title">Ласкаво просимо до Todo App</h1>
+        <p className="description">
+          Це простий додаток для управління завданнями, який допоможе вам
+          організувати свій день та підвищити продуктивність.
+        </p>
+        <div className="buttons">
+          <Link to="/login" className="btn btn-primary">Увійти</Link>
+          <Link to="/register" className="btn btn-secondary">Зареєструватися</Link>
+        </div>
       </div>
       <footer className="developer-info">
         <div className="developer-info-content">
@@ -136,4 +100,5 @@ const Login = ({ setUser }) => {
   );
 };
 
-export default Login;
+export default Home;
+

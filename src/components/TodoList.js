@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, ListGroup, Badge, Card, Modal } from 'react-bootstrap';
+import './TodoList.css';
 
 const TodoList = ({ isAuthenticated }) => {
   const [tasks, setTasks] = useState([]);
@@ -197,69 +198,74 @@ const TodoList = ({ isAuthenticated }) => {
     });
 
   const TasksView = ({ tasks, isArchived }) => (
-  <ListGroup>
-    {tasks.length > 0 ? tasks.map(task => (
-      <ListGroup.Item 
-        key={task.id} 
-        className={`d-flex justify-content-between align-items-center ${task.completed ? 'bg-light' : ''}`}
-      >
-        <div>
-          <span className={`me-2 ${task.completed ? 'text-decoration-line-through' : ''}`}>
-            {task.text}
-          </span>
-          <Badge 
-            bg={task.priority === 'High' ? 'danger' : task.priority === 'Medium' ? 'warning' : 'info'}
-            className="me-2"
-          >
-            {task.priority === 'High' ? 'Високий' : task.priority === 'Medium' ? 'Середній' : 'Низький'}
-          </Badge>
-          <Badge bg="secondary" className="me-2">{task.category}</Badge>
-          {task.dueDate && (
-            <Badge 
-              bg={getDueDateStatus(task.dueDate).variant}
-              className="me-2"
-            >
-              {getDueDateStatus(task.dueDate).text}
-            </Badge>
-          )}
-          <small className="text-muted">
-            Створено: {new Date(task.createdAt).toLocaleDateString()}
-          </small>
+    <div className="row">
+      {tasks.length > 0 ? tasks.map(task => (
+        <div key={task.id} className="col-md-6 col-lg-4 mb-3">
+          <Card>
+            <Card.Body>
+              <Card.Title className={task.completed ? 'text-decoration-line-through' : ''}>
+                {task.text}
+              </Card.Title>
+              <Card.Text>
+                <Badge 
+                  bg={task.priority === 'High' ? 'danger' : task.priority === 'Medium' ? 'warning' : 'info'}
+                  className="me-2"
+                >
+                  {task.priority === 'High' ? 'Високий' : task.priority === 'Medium' ? 'Середній' : 'Низький'}
+                </Badge>
+                <Badge bg="secondary" className="me-2">{task.category}</Badge>
+                {task.dueDate && (
+                  <Badge 
+                    bg={getDueDateStatus(task.dueDate).variant}
+                    className="me-2"
+                  >
+                    {getDueDateStatus(task.dueDate).text}
+                  </Badge>
+                )}
+              </Card.Text>
+              <small className="text-muted d-block mb-3">
+                Створено: {new Date(task.createdAt).toLocaleDateString()}
+              </small>
+              <div className="d-flex gap-2 flex-wrap">
+                {!isArchived && (
+                  <Button 
+                    variant={task.completed ? "outline-warning" : "outline-success"}
+                    size="sm"
+                    onClick={() => completeTask(task.id)}
+                  >
+                    {task.completed ? "Відмінити" : "Завершити"}
+                  </Button>
+                )}
+                <Button 
+                  variant={isArchived ? "outline-success" : "outline-warning"} 
+                  size="sm" 
+                  onClick={() => isArchived ? restoreTask(task.id) : archiveTask(task.id)}
+                >
+                  {isArchived ? "Відновити" : "Архівувати"}
+                </Button>
+                <Button 
+                  variant="outline-danger" 
+                  size="sm" 
+                  onClick={() => {
+                    setTaskToDelete(task.id);
+                    setShowDeleteConfirm(true);
+                  }}
+                >
+                  Видалити
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
         </div>
-        <div className="d-flex gap-2">
-          {!isArchived && (
-            <Button 
-              variant={task.completed ? "outline-warning" : "outline-success"}
-              size="sm"
-              onClick={() => completeTask(task.id)}
-            >
-              {task.completed ? "Відмінити" : "Завершити"}
-            </Button>
-          )}
-          <Button 
-            variant={isArchived ? "outline-success" : "outline-warning"} 
-            size="sm" 
-            onClick={() => isArchived ? restoreTask(task.id) : archiveTask(task.id)}
-          >
-            {isArchived ? "Відновити" : "Архівувати"}
-          </Button>
-          <Button 
-            variant="outline-danger" 
-            size="sm" 
-            onClick={() => {
-              setTaskToDelete(task.id);
-              setShowDeleteConfirm(true);
-            }}
-          >
-            Видалити
-          </Button>
+      )) : (
+        <div className="col-12">
+          <Card>
+            <Card.Body className="text-center">Завдань немає</Card.Body>
+          </Card>
         </div>
-      </ListGroup.Item>
-    )) : (
-      <ListGroup.Item className="text-center">Завдань немає</ListGroup.Item>
-    )}
-  </ListGroup>
-);
+      )}
+    </div>
+  );
 
   return (
     <div className="container py-4">
