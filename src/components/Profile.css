@@ -1,34 +1,101 @@
 .profile-container {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 20px;
-  background-size: cover;
-  background-position: center;
-  border-radius: 12px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #f0f0f0;
+  min-height: 100vh;
 }
 
-.profile-avatar {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 20px;
+.profile-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-top: 20px;
 }
 
-input[type="file"] {
+.profile-board-row {
+  display: flex;
+}
+
+.profile-square {
+  width: 100px;
+  height: 100px;
+  font-size: 48px;
+  font-weight: bold;
+  margin: 4px;
+  background: #fff;
+  border: 3px solid #4CAF50;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-square:hover {
+  background-color: #e8f5e9;
+}
+
+.profile-game-info {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 24px;
+}
+
+.profile-button {
+  margin: 10px;
+  padding: 12px 24px;
+  font-size: 18px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.profile-button:hover {
+  background-color: #45a049;
+}
+
+.profile-difficulty-settings {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-difficulty-buttons {
+  display: flex;
+  justify-content: center;
   margin-top: 10px;
 }
 
-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  background-color: #007bff;
+.profile-difficulty-button {
+  margin: 0 5px;
+  padding: 8px 16px;
+  font-size: 16px;
+  background-color: #2196F3;
   color: white;
   border: none;
+  border-radius: 5px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-button:hover {
-  background-color: #0056b3;
+.profile-difficulty-button:hover {
+  background-color: #1976D2;
 }
+
+.profile-difficulty-button.active {
+  background-color: #1565C0;
+}
+
+.profile-heading {
+  color: #333;
+  margin-bottom: 20px;
+}
+
