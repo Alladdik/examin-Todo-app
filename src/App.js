@@ -27,8 +27,8 @@ const App = () => {
     <Router>
       <Navbar user={user} onLogout={handleLogout} />
       <Routes>
-        <Route path="/" element={<Home />} /> {/* Додайте цей маршрут */}
-        <Route path="/login" element={<Login setUser={setUser} />} /> {/* Змініть цей маршрут */}
+        <Route path="/" element={<Home />} /> {}
+        <Route path="/login" element={<Login setUser={setUser} />} /> {}
         <Route path="/register" element={<Register />} />
         <Route path="/todos" element={<TodoList isAuthenticated={!!user} />} />
         {user && <Route path="/profile" element={<Profile username={user.username} />} />}
